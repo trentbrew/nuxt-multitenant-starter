@@ -138,6 +138,23 @@
                     </button>
                   </div>
                 </motion.li>
+
+                <!-- Add New button for editable sections -->
+                <motion.li
+                  v-if="routes.currentSidebarSection.value?.editable"
+                  :initial="{ opacity: 0, x: -10 }"
+                  :animate="{ opacity: 1, x: 0 }"
+                  :transition="{ duration: 0.28, ease: 'easeOut', delay: unpinnedItems.length * 0.035 }"
+                >
+                  <button
+                    type="button"
+                    class="text-muted-foreground hover:bg-foreground/10 hover:text-foreground flex w-full items-center gap-3 rounded-lg px-3 py-2 transition"
+                    @click="handleAddNew"
+                  >
+                    <Icon name="lucide:plus" class="h-4 w-4" />
+                    <span class="flex-1 text-left">Add New</span>
+                  </button>
+                </motion.li>
               </motion.ul>
             </AnimatePresence>
           </div>
@@ -171,8 +188,8 @@
       </template>
     </ClientOnly>
 
-    <!-- Quick tip: elevated card element -->
-    <div class="mt-auto border-border bg-card rounded-xl border p-3">
+    <!-- Sidebar content -->
+    <div class="border-border bg-card rounded-xl border p-3">
       <p class="text-foreground text-xs font-semibold">Quick tip</p>
       <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
         Press Shift + Option + D to open Nuxt DevTools and inspect routes, data, and assets.
@@ -199,4 +216,36 @@
   const unpinnedItems = computed(() => {
     return pinned.getUnpinnedItems(routes.currentSectionLinks.value)
   })
+
+  // Handle Add New button click - create collection immediately
+  const handleAddNew = async () => {
+    const section = routes.currentSidebarSection.value
+    if (section?.path === '/collections') {
+      const { collections: collectionApi, currentApp } = useDatabase()
+
+      if (!currentApp.value) return
+
+      // Get count for order
+      const existingCollections = await collectionApi.list(currentApp.value.id)
+
+      // Create new collection with defaults
+      const slug = `untitled-${Date.now()}`
+      const collectionId = await collectionApi.create({
+        appId: currentApp.value.id,
+        title: 'Untitled',
+        icon: 'lucide:database',
+        slug,
+        type: 'database',
+        order: existingCollections.length,
+        isPublished: false,
+        createdBy: 'current-user',
+      })
+
+      // Reload sidebar collections
+      await routes.reloadCollections()
+
+      // Navigate to new collection
+      navigateTo(`/collections/${slug}`)
+    }
+  }
 </script>

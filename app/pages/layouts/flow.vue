@@ -84,8 +84,8 @@
       </VueFlow>
 
       <!-- Details Sidebar -->
-      <Transition name="slide-left">
-        <div v-if="showSidebar" class="absolute right-0 top-0 h-full w-80 border-l border-border bg-card shadow-lg">
+      <Transition name="slide-left" class="z-50">
+        <div v-if="showSidebar" class="absolute right-0 top-0 h-full w-80 border-l border-border bg-foreground/2 z-50">
           <div class="flex h-full flex-col">
             <!-- Header -->
             <div class="border-b border-border p-4">

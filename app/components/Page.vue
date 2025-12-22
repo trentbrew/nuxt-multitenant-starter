@@ -1,87 +1,95 @@
 <template>
-  <div :class="finalContainerClass">
-    <!-- Main content uses base background (darkest layer) -->
-    <div :class="contentWrapperClass + ' bg-background'">
-      <!-- Header Section -->
-      <div
-        v-if="subtitle || title || description || $slots.header"
-        class="sticky top-0 z-10 shrink-0 space-y-2 bg-background"
-      >
-        <div class="bg-background border-b border-border p-6 pl-8 backdrop-blur-xl">
-          <!-- Subtitle with optional back button and icon -->
-          <div class="flex items-center justify-between mb-2">
-            <div v-if="subtitle || showBackButton || icon" class="inline-flex items-center gap-0">
-              <BackButton v-if="showBackButton" />
-              <Icon v-if="icon" :name="icon" :class="`${iconClass} ${subtitleColor} mr-2`" />
-              <p v-if="subtitle" :class="['text-xs uppercase tracking-wide', subtitleColor || 'text-primary']">
-                {{ subtitle }}
-              </p>
+  <div class="flex h-full">
+    <!-- Secondary Sidebar (optional) -->
+    <aside v-if="$slots.sidebar && !hideSidebar" class="w-64 shrink-0 border-r border-border bg-card">
+      <slot name="sidebar" />
+    </aside>
+
+    <!-- Main Page Content -->
+    <div :class="finalContainerClass" class="flex-1">
+      <!-- Main content uses base background (darkest layer) -->
+      <div :class="contentWrapperClass + ' bg-background'">
+        <!-- Header Section -->
+        <div
+          v-if="subtitle || title || description || $slots.header"
+          class="sticky top-0 z-10 shrink-0 space-y-2 bg-background"
+        >
+          <div class="bg-background border-b border-border p-6 pl-8 backdrop-blur-xl">
+            <!-- Subtitle with optional back button and icon -->
+            <div class="flex items-center justify-between mb-2">
+              <div v-if="subtitle || showBackButton || icon" class="inline-flex items-center gap-0">
+                <BackButton v-if="showBackButton" />
+                <Icon v-if="icon" :name="icon" :class="`${iconClass} ${subtitleColor} mr-2`" />
+                <p v-if="subtitle" :class="['text-xs uppercase tracking-wide', subtitleColor || 'text-primary']">
+                  {{ subtitle }}
+                </p>
+              </div>
+
+              <!-- Width Toggle Button (Notion-style) - ClientOnly to avoid hydration mismatch -->
+              <ClientOnly>
+                <UiTooltip v-if="showWidthToggle">
+                  <UiTooltipTrigger as-child>
+                    <button
+                      type="button"
+                      class="text-muted-foreground hover:text-foreground hover:bg-foreground/10 flex h-8 w-8 items-center justify-center rounded-lg transition"
+                      @click="toggleWidth"
+                    >
+                      <Icon :name="isFullWidth ? 'lucide:minimize-2' : 'lucide:maximize-2'" class="h-4 w-4" />
+                    </button>
+                  </UiTooltipTrigger>
+                  <UiTooltipContent side="left">
+                    {{ isFullWidth ? 'Narrow width' : 'Full width' }}
+                  </UiTooltipContent>
+                </UiTooltip>
+                <template #fallback>
+                  <div v-if="showWidthToggle" class="h-8 w-8" />
+                </template>
+              </ClientOnly>
             </div>
 
-            <!-- Width Toggle Button (Notion-style) - ClientOnly to avoid hydration mismatch -->
-            <ClientOnly>
-              <UiTooltip v-if="showWidthToggle">
-                <UiTooltipTrigger as-child>
-                  <button
-                    type="button"
-                    class="text-muted-foreground hover:text-foreground hover:bg-foreground/10 flex h-8 w-8 items-center justify-center rounded-lg transition"
-                    @click="toggleWidth"
-                  >
-                    <Icon :name="isFullWidth ? 'lucide:minimize-2' : 'lucide:maximize-2'" class="h-4 w-4" />
-                  </button>
-                </UiTooltipTrigger>
-                <UiTooltipContent side="left">
-                  {{ isFullWidth ? 'Narrow width' : 'Full width' }}
-                </UiTooltipContent>
-              </UiTooltip>
-              <template #fallback>
-                <div v-if="showWidthToggle" class="h-8 w-8" />
-              </template>
-            </ClientOnly>
+            <!-- Title -->
+            <h1 v-if="title || $slots.title" class="text-foreground text-3xl font-semibold mb-2">
+              <slot name="title">{{ title }}</slot>
+            </h1>
+            <!-- Description -->
+            <p v-if="description || $slots.description" class="text-muted-foreground max-w-2xl text-sm">
+              <slot name="description">{{ description }}</slot>
+            </p>
+            <!-- Custom header slot -->
+            <slot name="header" />
           </div>
 
-          <!-- Title -->
-          <h1 v-if="title || $slots.title" class="text-foreground text-3xl font-semibold mb-2">
-            <slot name="title">{{ title }}</slot>
-          </h1>
-          <!-- Description -->
-          <p v-if="description || $slots.description" class="text-muted-foreground max-w-2xl text-sm">
-            <slot name="description">{{ description }}</slot>
-          </p>
-          <!-- Custom header slot -->
-          <slot name="header" />
-        </div>
-
-        <!-- Metadata / Actions Row -->
-        <div v-if="metadata || $slots.metadata || $slots.actions" class="flex flex-wrap items-center gap-4 pt-2">
-          <div v-if="metadata || $slots.metadata" class="flex items-center gap-2">
-            <slot name="metadata">
-              <template v-if="Array.isArray(metadata)">
+          <!-- Metadata / Actions Row -->
+          <div v-if="metadata || $slots.metadata || $slots.actions" class="flex flex-wrap items-center gap-4 pt-2">
+            <div v-if="metadata || $slots.metadata" class="flex items-center gap-2">
+              <slot name="metadata">
+                <template v-if="Array.isArray(metadata)">
+                  <span
+                    v-for="(item, i) in metadata"
+                    :key="i"
+                    class="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold"
+                  >
+                    {{ item }}
+                  </span>
+                </template>
                 <span
-                  v-for="(item, i) in metadata"
-                  :key="i"
+                  v-else-if="metadata"
                   class="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold"
                 >
-                  {{ item }}
+                  {{ metadata }}
                 </span>
-              </template>
-              <span
-                v-else-if="metadata"
-                class="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                {{ metadata }}
-              </span>
-            </slot>
-          </div>
-          <div v-if="$slots.actions" class="ml-auto">
-            <slot name="actions" />
+              </slot>
+            </div>
+            <div v-if="$slots.actions" class="ml-auto">
+              <slot name="actions" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Main Content -->
-      <div v-if="$slots.default" :class="[contentClass, fillHeight ? 'min-h-0 flex-1 overflow-auto' : 'p-6 pt-0']">
-        <slot :is-full-width="isFullWidth" />
+        <!-- Main Content -->
+        <div v-if="$slots.default" :class="[contentClass, fillHeight ? 'min-h-0 flex-1 overflow-auto' : 'p-6 pt-0']">
+          <slot :is-full-width="isFullWidth" />
+        </div>
       </div>
     </div>
   </div>
@@ -119,6 +127,8 @@
     showWidthToggle?: boolean
     /** Fill available height (content scrolls within) */
     fillHeight?: boolean
+    /** Hide the sidebar even if sidebar slot has content */
+    hideSidebar?: boolean
   }
 
   const props = withDefaults(defineProps<PageProps>(), {
@@ -128,6 +138,7 @@
     fullWidth: true,
     showWidthToggle: true,
     fillHeight: false,
+    hideSidebar: false,
   })
 
   const route = useRoute()

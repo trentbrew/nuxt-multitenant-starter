@@ -36,13 +36,55 @@ export const useRoutes = () => {
   const currentSidebarSection = computed(() => getSidebarSection(route.path))
 
   /**
+   * Dynamic children for collections
+   */
+  const collectionsChildren = ref<RouteConfig[]>([])
+
+  const loadCollections = async () => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const { db } = await import('~/lib/database')
+      const currentApp = useState<any>('currentApp')
+
+      if (currentApp.value?.id) {
+        const collections = await db.collections.where('appId').equals(currentApp.value.id).sortBy('order')
+
+        collectionsChildren.value = collections.map((col) => ({
+          path: `/collections/${col.slug}`,
+          label: col.title,
+          icon: col.icon || 'lucide:database',
+          tint: 'text-blue-300',
+          meta: {
+            title: col.title,
+            subtitle: col.type,
+            subtitleColor: 'text-blue-300',
+          },
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to load collections:', error)
+    }
+  }
+
+  // Load collections when current app changes
+  const currentApp = useState<any>('currentApp')
+  watch(currentApp, loadCollections, { immediate: true })
+
+  /**
    * Get current section's children (for sidebar)
    */
   const currentSectionLinks = computed(() => {
     const section = currentSidebarSection.value
     if (!section?.children) return []
 
-    return section.children
+    // If this is the collections section, merge with dynamic children
+    let children = section.children
+    if (section.path === '/collections') {
+      children = [...collectionsChildren.value, ...section.children]
+    }
+
+    return children
       .filter((child) => child?.path && child.visible?.() !== false)
       .sort((a, b) => (a.order || 999) - (b.order || 999))
   })
@@ -110,5 +152,6 @@ export const useRoutes = () => {
     isRouteActive,
     getRouteBadge,
     findRoute,
+    reloadCollections: loadCollections,
   }
 }

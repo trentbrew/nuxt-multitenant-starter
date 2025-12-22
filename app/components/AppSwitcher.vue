@@ -1,37 +1,35 @@
 <script lang="ts" setup>
-  interface Application {
-    id: string
-    name: string
-    initials: string
-    type: string
-    color: string
+  import type { Application } from '~/types/database'
+
+  const { applications: appApi, currentOrg, currentApp } = useDatabase()
+
+  const applications = ref<Application[]>([])
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
-  const applications = ref<Application[]>([
-    {
-      id: '1',
-      name: 'Filegraph',
-      initials: 'FG',
-      type: 'Workspace app',
-      color: 'bg-primary text-primary-foreground',
-    },
-    {
-      id: '2',
-      name: 'Markform',
-      initials: 'MF',
-      type: 'Analytics app',
-      color: 'bg-sky-500 text-white',
-    },
-    {
-      id: '3',
-      name: 'Nodebook',
-      initials: 'NB',
-      type: 'Library app',
-      color: 'bg-emerald-500 text-white',
-    },
-  ])
+  const getColorClass = (color: string) => {
+    return color + ' text-white'
+  }
 
-  const currentApp = ref<Application>(applications.value[0]!)
+  watch(
+    currentOrg,
+    async (org) => {
+      if (org) {
+        applications.value = await appApi.list(org.id)
+        if (applications.value.length > 0 && !currentApp.value) {
+          currentApp.value = applications.value[0]!
+        }
+      }
+    },
+    { immediate: true },
+  )
 
   const selectApp = (app: Application) => {
     currentApp.value = app
@@ -45,9 +43,9 @@
         <div
           class="bg-primary text-primary-foreground flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-semibold"
         >
-          {{ currentApp.initials }}
+          {{ currentApp ? getInitials(currentApp.name) : 'AP' }}
         </div>
-        <span class="text-foreground text-sm font-medium">{{ currentApp.name }}</span>
+        <span class="text-foreground text-sm font-medium">{{ currentApp?.name || 'Select App' }}</span>
         <Icon name="lucide:chevrons-up-down" class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
       </button>
     </UiDropdownMenuTrigger>
@@ -55,11 +53,17 @@
       <UiDropdownMenuLabel>Applications</UiDropdownMenuLabel>
       <UiDropdownMenuSeparator />
       <UiDropdownMenuItem v-for="app in applications" :key="app.id" class="gap-3" @click="selectApp(app)">
-        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-semibold" :class="app.color">
-          {{ app.initials }}
+        <div
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-semibold"
+          :class="getColorClass(app.color)"
+        >
+          {{ getInitials(app.name) }}
         </div>
-        <span class="flex-1 truncate">{{ app.name }}</span>
-        <Icon v-if="app.id === currentApp.id" name="lucide:check" class="text-primary h-4 w-4 shrink-0" />
+        <div class="flex flex-1 flex-col">
+          <span class="truncate">{{ app.name }}</span>
+          <span class="text-muted-foreground text-xs">{{ app.description }}</span>
+        </div>
+        <Icon v-if="app.id === currentApp?.id" name="lucide:check" class="text-primary h-4 w-4 shrink-0" />
       </UiDropdownMenuItem>
       <UiDropdownMenuSeparator />
       <UiDropdownMenuItem icon="lucide:plus">Create application</UiDropdownMenuItem>
