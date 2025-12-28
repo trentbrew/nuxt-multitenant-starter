@@ -190,7 +190,7 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       lint-staged:
-        specifier: ^16.1.5
+        specifier: ^16.2.7
         version: 16.2.7
       playwright-core:
         specifier: ^1.55.0
